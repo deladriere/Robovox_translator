@@ -291,7 +291,7 @@
 
         <div class="midi-section">
             <h3>🎵 MIDI Controls</h3>
-            <p>Send MIDI notes to your Robovox synthesizer or download a MIDI file.</p>
+            <p>Send MIDI notes to your Robovox synthesizer.</p>
 
             <div id="midiConnectionStatus" class="status" style="display: none; margin-bottom: 15px;"></div>
 
@@ -301,9 +301,6 @@
                 </button>
                 <button id="sendMidiBtn" class="midi-btn" onclick="sendMIDINotes()" disabled>
                     🎹 Send MIDI Notes
-                </button>
-                <button id="downloadMidiBtn" class="midi-btn download-btn" onclick="downloadMIDIFile()">
-                    💾 Download MIDI File
                 </button>
             </div>
 
@@ -574,12 +571,12 @@
                     // Send Note On
                     selectedOutput.send([0x90, midiNote, 100]); // Channel 1, note, velocity 100
 
-                    // Send Note Off after 62.5ms (125ms ÷ 2)
+                    // Send Note Off after 100ms
                     setTimeout(() => {
                         selectedOutput.send([0x80, midiNote, 0]); // Channel 1, note, velocity 0
                         noteIndex++;
-                        setTimeout(sendNextNote, 12); // Small delay between notes (25ms ÷ 2)
-                    }, 62);
+                        setTimeout(sendNextNote, 0); // No gap - immediate next note
+                    }, 100);
                 } else {
                     noteIndex++;
                     setTimeout(sendNextNote, 50);
@@ -667,95 +664,6 @@
             document.getElementById('midiDialog').style.display = 'none';
         }
 
-        function downloadMIDIFile() {
-            if (currentPhonemes.length === 0) {
-                showStatus('No phonemes to download. Please enter some text first.', 'error');
-                return;
-            }
-
-            // Create a simple MIDI file
-            const midiData = createMIDIFile(currentPhonemes);
-            const blob = new Blob([midiData], { type: 'audio/midi' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'robovox_phonemes.mid';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            showStatus(`Downloaded MIDI file with ${currentPhonemes.length} phonemes!`, 'success');
-        }
-
-        function createMIDIFile(phonemes) {
-            // Simple MIDI file creation (simplified version)
-            const header = new Uint8Array([
-                0x4D, 0x54, 0x68, 0x64, // "MThd"
-                0x00, 0x00, 0x00, 0x06, // Header length
-                0x00, 0x01,             // Format 1
-                0x00, 0x01,             // 1 track
-                0x00, 0x60              // 96 ticks per quarter note
-            ]);
-
-            // Track header
-            const trackHeader = new Uint8Array([
-                0x4D, 0x54, 0x72, 0x6B  // "MTrk"
-            ]);
-
-            // Create track data
-            let trackData = [];
-            let time = 0;
-
-            for (let i = 0; i < phonemes.length; i++) {
-                const phoneme = phonemes[i];
-                const midiNote = phonemeToMIDI[phoneme];
-
-                if (midiNote) {
-                    // Note On
-                    trackData.push(0x00); // Delta time
-                    trackData.push(0x90); // Note On
-                    trackData.push(midiNote); // Note
-                    trackData.push(0x64); // Velocity
-
-                    // Note Off after 1 quarter note
-                    trackData.push(0x60); // Delta time
-                    trackData.push(0x80); // Note Off
-                    trackData.push(midiNote); // Note
-                    trackData.push(0x00); // Velocity
-                }
-            }
-
-            // End of track
-            trackData.push(0x00, 0xFF, 0x2F, 0x00);
-
-            // Calculate track length
-            const trackLength = trackData.length;
-            const trackLengthBytes = [
-                (trackLength >> 24) & 0xFF,
-                (trackLength >> 16) & 0xFF,
-                (trackLength >> 8) & 0xFF,
-                trackLength & 0xFF
-            ];
-
-            // Combine all parts
-            const midiFile = new Uint8Array(header.length + trackHeader.length + 4 + trackData.length);
-            let offset = 0;
-
-            midiFile.set(header, offset);
-            offset += header.length;
-
-            midiFile.set(trackHeader, offset);
-            offset += trackHeader.length;
-
-            midiFile.set(trackLengthBytes, offset);
-            offset += 4;
-
-            midiFile.set(trackData, offset);
-
-            return midiFile;
-        }
 
         function showStatus(message, type) {
             const statusDiv = document.getElementById('midiStatus');
