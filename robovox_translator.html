@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robovox IPA Translator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 18px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .output-section {
+            margin-top: 20px;
+        }
+
+        .output-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 10px;
+            min-height: 80px;
+        }
+
+        .ipa-text {
+            font-family: 'Times New Roman', serif;
+            font-size: 28px;
+            line-height: 1.6;
+            color: #333;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .robovox-text {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            line-height: 1.8;
+            color: #2c3e50;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .phoneme {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0c5460;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 Robovox IPA Translator</h1>
+
+        <div class="info">
+            <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes, then map to Robovox
+            SC-02 phonemes using the official mapping table.
+        </div>
+
+        <div class="input-group">
+            <label for="textInput">Enter text to convert:</label>
+            <input type="text" id="textInput" placeholder="Type your text here..." value="hello">
+        </div>
+
+        <div class="output-section">
+            <div class="output-box">
+                <div><strong>IPA Phonemes:</strong></div>
+                <div id="ipaOutput" class="ipa-text">həˈloʊ</div>
+            </div>
+
+            <div class="output-box">
+                <div><strong>Robovox SC-02 Phonemes:</strong></div>
+                <div id="robovoxOutput" class="robovox-text">
+                    <span class="phoneme">HF</span>
+                    <span class="phoneme">E2</span>
+                    <span class="phoneme">L</span>
+                    <span class="phoneme">O</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // IPA to SC-02 mapping table
+        const ipaToSC02 = {
+            'p': 'P', 'b': 'B', 't': 'T', 'd': 'D', 'ʈ': 'T', 'ɖ': 'D',
+            'c': 'K', 'ɟ': 'G', 'k': 'K', 'g': 'G', 'q': 'K', 'ɢ': 'G',
+            'ʔ': '', 'm': 'M', 'ɱ': 'M', 'n̪': 'N', 'n': 'N', 'ɳ': 'N',
+            'ɲ': 'N', 'ŋ': 'NG', 'ɴ': 'NG', 'ʙ': 'R2', 'r̥': 'R1', 'r': 'R',
+            'ⱱ': 'R1', 'ɾ': 'R1', 'ɽ': 'R1', 'ɸ': 'F', 'β': 'V', 'f': 'F',
+            'v': 'V', 'θ': 'TH', 'ð': 'THV', 's': 'S', 'z': 'Z', 'ʃ': 'SCH',
+            'ʒ': 'J', 'ʂ': 'S', 'ʐ': 'Z', 'ç': 'HFC', 'ʝ': 'J', 'x': 'HF',
+            'ɣ': 'HV', 'χ': 'HF', 'ʁ': 'HV', 'ħ': 'HF', 'ʕ': 'HN', 'h': 'HF',
+            'ɦ': 'HV', 'ɬ': 'LF', 'ɮ': 'LB', 'ʋ': 'W', 'ɹ': 'R', 'ɻ': 'R',
+            'j': 'Y', 'ɰ': 'W', 'l̪': 'L1', 'l': 'L', 'ɭ': 'L1', 'ʎ': 'L',
+            'ʟ': 'L', 'ʘ': '', 'ǀ': '', 'ǃ': '', 'ǂ': '', 'ǁ': '', 'ɓ': 'B',
+            'ɗ': 'D', 'ʄ': 'J', 'ɠ': 'G', 'ʛ': 'G', 'ʼ': '', 'i': 'I', 'y': 'Y',
+            'ɨ': 'E2', 'ʉ': 'IU', 'ɯ': 'U1', 'u': 'OO', 'ɪ': 'IE', 'ʏ': 'YI',
+            'ʊ': 'U1', 'e': 'E', 'ø': 'E2', 'ɘ': 'E2', 'ɵ': 'OU', 'ɤ': 'UH',
+            'o': 'O', 'ə': 'E2', 'ɛ': 'EH', 'œ': 'EH1', 'ɜ': 'ER', 'ɞ': 'UH2',
+            'ʌ': 'UH', 'ɔ': ':OH', 'æ': 'AE', 'ɐ': 'AH1', 'a': 'A', 'ɶ': ':A',
+            'ɑ': 'AH', 'ɒ': 'AW'
+        };
+
+        // Simple text to IPA approximation (for demonstration)
+        function textToIPA(text) {
+            const textToIPAMap = {
+                'hello': 'həˈloʊ',
+                'world': 'wɜrld',
+                'test': 'tɛst',
+                'good': 'ɡʊd',
+                'morning': 'ˈmɔrnɪŋ',
+                'night': 'naɪt',
+                'day': 'deɪ',
+                'time': 'taɪm',
+                'how': 'haʊ',
+                'are': 'ɑr',
+                'you': 'ju',
+                'today': 'təˈdeɪ',
+                'fine': 'faɪn',
+                'thanks': 'θæŋks',
+                'please': 'pliz',
+                'yes': 'jɛs',
+                'no': 'noʊ',
+                'help': 'hɛlp',
+                'water': 'ˈwɔtər',
+                'food': 'fud',
+                'house': 'haʊs',
+                'car': 'kɑr',
+                'book': 'bʊk',
+                'cat': 'kæt',
+                'dog': 'dɔɡ'
+            };
+
+            const lowerText = text.toLowerCase();
+
+            // Check for exact word matches first
+            if (textToIPAMap[lowerText]) {
+                return textToIPAMap[lowerText];
+            }
+
+            // Simple letter-to-IPA approximation
+            let ipa = lowerText;
+
+            // Common letter combinations
+            ipa = ipa.replace(/th/g, 'θ');
+            ipa = ipa.replace(/sh/g, 'ʃ');
+            ipa = ipa.replace(/ch/g, 'tʃ');
+            ipa = ipa.replace(/ng/g, 'ŋ');
+            ipa = ipa.replace(/oo/g, 'u');
+            ipa = ipa.replace(/ee/g, 'i');
+            ipa = ipa.replace(/ay/g, 'eɪ');
+            ipa = ipa.replace(/oy/g, 'ɔɪ');
+            ipa = ipa.replace(/ow/g, 'aʊ');
+
+            // Single letter mappings
+            ipa = ipa.replace(/a/g, 'æ');
+            ipa = ipa.replace(/e/g, 'ɛ');
+            ipa = ipa.replace(/i/g, 'ɪ');
+            ipa = ipa.replace(/o/g, 'ɔ');
+            ipa = ipa.replace(/u/g, 'ʊ');
+
+            return ipa;
+        }
+
+        function convertToPhonemes() {
+            const textInput = document.getElementById('textInput');
+            const ipaOutput = document.getElementById('ipaOutput');
+            const robovoxOutput = document.getElementById('robovoxOutput');
+
+            const text = textInput.value.trim();
+            if (!text) {
+                ipaOutput.textContent = '';
+                robovoxOutput.innerHTML = '';
+                return;
+            }
+
+            // Convert to IPA
+            const ipa = textToIPA(text);
+            ipaOutput.textContent = ipa;
+
+            // Convert IPA to Robovox phonemes
+            let robovoxPhonemes = [];
+
+            for (let i = 0; i < ipa.length; i++) {
+                const char = ipa[i];
+
+                // Skip stress marks and other diacritics
+                if (char === 'ˈ' || char === 'ˌ' || char === 'ː') {
+                    continue;
+                }
+
+                // Check for multi-character IPA symbols
+                let found = false;
+                for (let length = 2; length >= 1; length--) {
+                    if (i + length <= ipa.length) {
+                        const substr = ipa.substring(i, i + length);
+                        if (ipaToSC02[substr]) {
+                            const sc02 = ipaToSC02[substr];
+                            if (sc02) { // Only add if not empty
+                                robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                            }
+                            i += length - 1; // Skip the processed characters
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Single character
+                if (!found && ipaToSC02[char]) {
+                    const sc02 = ipaToSC02[char];
+                    if (sc02) { // Only add if not empty
+                        robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                    }
+                }
+            }
+
+            robovoxOutput.innerHTML = robovoxPhonemes.join(' ');
+        }
+
+        // Convert on input
+        document.getElementById('textInput').addEventListener('input', convertToPhonemes);
+
+        // Convert on page load
+        window.onload = function () {
+            convertToPhonemes();
+        };
+    </script>
+</body>
+
+</html>
