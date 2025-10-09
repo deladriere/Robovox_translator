@@ -110,6 +110,151 @@
             color: #667eea;
             font-style: italic;
         }
+
+        .midi-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .midi-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex: 1;
+        }
+
+        .midi-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .midi-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .midi-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .midi-dialog-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .midi-dialog h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .device-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .device-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .device-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-item.selected {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .dialog-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .dialog-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .dialog-btn.primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .dialog-btn.secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
     </style>
 </head>
 
@@ -143,9 +288,115 @@
                 </div>
             </div>
         </div>
+
+        <div class="midi-section">
+            <h3>🎵 MIDI Controls</h3>
+            <p>Send MIDI notes to your Robovox synthesizer or download a MIDI file.</p>
+
+            <div id="midiConnectionStatus" class="status" style="display: none; margin-bottom: 15px;"></div>
+
+            <div class="button-group">
+                <button id="connectMidiBtn" class="midi-btn" onclick="showMIDIDialog()">
+                    🔌 Connect MIDI Device
+                </button>
+                <button id="sendMidiBtn" class="midi-btn" onclick="sendMIDINotes()" disabled>
+                    🎹 Send MIDI Notes
+                </button>
+                <button id="downloadMidiBtn" class="midi-btn download-btn" onclick="downloadMIDIFile()">
+                    💾 Download MIDI File
+                </button>
+            </div>
+
+            <div id="midiStatus" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- MIDI Device Selection Dialog -->
+    <div id="midiDialog" class="midi-dialog">
+        <div class="midi-dialog-content">
+            <h3>🎹 Select MIDI Device</h3>
+            <p>Choose a MIDI output device to connect to your Robovox synthesizer:</p>
+
+            <div id="deviceList" class="device-list">
+                <div class="device-item">Loading MIDI devices...</div>
+            </div>
+
+            <div class="dialog-buttons">
+                <button class="dialog-btn secondary" onclick="closeMIDIDialog()">Cancel</button>
+                <button id="connectBtn" class="dialog-btn primary" onclick="connectToDevice()" disabled>Connect</button>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Robovox phoneme to MIDI note mapping (correct mapping from your phoneme array)
+        const phonemeToMIDI = {
+            'U': 36,
+            ':UH': 37,
+            'IU': 38,
+            ':U': 39,
+            'O': 40,
+            'OO': 41,
+            ':OH': 42,
+            'AW': 43,
+            'AH': 45,
+            'A': 46,
+            'ER': 47,
+            'E2': 48,
+            'EH': 49,
+            'I': 50,
+            'E': 51,
+            'IE': 52,
+            'YI': 53,
+            'NG': 54,
+            'M': 55,
+            'L': 56,
+            'N': 57,
+            'R2': 58,
+            'HF': 59,
+            'HFC': 60,
+            'J': 61,
+            'SCH': 62,
+            'Z': 63,
+            'S': 64,
+            'F': 65,
+            'V': 66,
+            'B': 68,
+            'P': 69,
+            'D': 70,
+            'T': 71,
+            'K': 72,
+            'KV': 73,
+            'PA0': 74,
+            'OU': 75,
+            'UH': 76,
+            'AE': 77,
+            ':A': 78,
+            'AY': 79,
+            'Y': 80,
+            'HV': 81,
+            'HVC': 82,
+            'HN': 83,
+            'LF': 84,
+            'L1': 85,
+            'LB': 86,
+            'TH': 87,
+            'THV': 88,
+            'R': 89,
+            'R1': 90,
+            'W': 91,
+            'E1': 94,
+            'AI': 95,
+            'EH1': 96,
+            'AE1': 97,
+            'AH1': 98,
+            'IU1': 99,
+            'U1': 100,
+            'UH1': 101,
+            'UH2': 102,
+            'UH3': 103
+        };
+
         // IPA to SC-02 mapping table
         const ipaToSC02 = {
             'p': 'P', 'b': 'B', 't': 'T', 'd': 'D', 'ʈ': 'T', 'ɖ': 'D',
@@ -280,6 +531,315 @@
                     }
                 }
             }
+
+            robovoxOutput.innerHTML = robovoxPhonemes.join(' ');
+        }
+
+        // MIDI functions
+        let currentPhonemes = [];
+        let midiAccess = null;
+        let selectedOutput = null;
+        let availableOutputs = [];
+
+        function sendMIDINotes() {
+            const statusDiv = document.getElementById('midiStatus');
+            const sendBtn = document.getElementById('sendMidiBtn');
+
+            if (!selectedOutput) {
+                showStatus('Please connect to a MIDI device first.', 'error');
+                return;
+            }
+
+            if (currentPhonemes.length === 0) {
+                showStatus('No phonemes to send. Please enter some text first.', 'error');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            showStatus('Sending MIDI notes...', 'success');
+
+            let noteIndex = 0;
+
+            function sendNextNote() {
+                if (noteIndex >= currentPhonemes.length) {
+                    showStatus(`Sent ${currentPhonemes.length} MIDI notes successfully!`, 'success');
+                    sendBtn.disabled = false;
+                    return;
+                }
+
+                const phoneme = currentPhonemes[noteIndex];
+                const midiNote = phonemeToMIDI[phoneme];
+
+                if (midiNote) {
+                    // Send Note On
+                    selectedOutput.send([0x90, midiNote, 100]); // Channel 1, note, velocity 100
+
+                    // Send Note Off after 62.5ms (125ms ÷ 2)
+                    setTimeout(() => {
+                        selectedOutput.send([0x80, midiNote, 0]); // Channel 1, note, velocity 0
+                        noteIndex++;
+                        setTimeout(sendNextNote, 12); // Small delay between notes (25ms ÷ 2)
+                    }, 62);
+                } else {
+                    noteIndex++;
+                    setTimeout(sendNextNote, 50);
+                }
+            }
+
+            sendNextNote();
+        }
+
+        function showMIDIDialog() {
+            const dialog = document.getElementById('midiDialog');
+            const deviceList = document.getElementById('deviceList');
+
+            dialog.style.display = 'flex';
+
+            // Request MIDI access and populate device list
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess().then(function (access) {
+                    midiAccess = access;
+                    availableOutputs = Array.from(access.outputs.values());
+
+                    if (availableOutputs.length === 0) {
+                        deviceList.innerHTML = '<div class="device-item">No MIDI output devices found. Please connect a MIDI device and refresh.</div>';
+                        return;
+                    }
+
+                    // Populate device list
+                    deviceList.innerHTML = '';
+                    availableOutputs.forEach((output, index) => {
+                        const deviceItem = document.createElement('div');
+                        deviceItem.className = 'device-item';
+                        deviceItem.textContent = output.name || `MIDI Device ${index + 1}`;
+                        deviceItem.onclick = () => selectDevice(index);
+                        deviceList.appendChild(deviceItem);
+                    });
+
+                }).catch(function (err) {
+                    deviceList.innerHTML = `<div class="device-item">Error accessing MIDI: ${err.message}</div>`;
+                });
+            } else {
+                deviceList.innerHTML = '<div class="device-item">MIDI not supported in this browser.</div>';
+            }
+        }
+
+        function selectDevice(index) {
+            // Remove previous selection
+            document.querySelectorAll('.device-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Select new device
+            document.querySelectorAll('.device-item')[index].classList.add('selected');
+
+            // Enable connect button
+            document.getElementById('connectBtn').disabled = false;
+        }
+
+        function connectToDevice() {
+            const selectedIndex = Array.from(document.querySelectorAll('.device-item')).findIndex(item =>
+                item.classList.contains('selected')
+            );
+
+            if (selectedIndex === -1) {
+                showStatus('Please select a MIDI device first.', 'error');
+                return;
+            }
+
+            selectedOutput = availableOutputs[selectedIndex];
+
+            // Update UI
+            document.getElementById('connectMidiBtn').textContent = '✅ Connected';
+            document.getElementById('connectMidiBtn').disabled = true;
+            document.getElementById('sendMidiBtn').disabled = false;
+
+            // Show connection status
+            const connectionStatus = document.getElementById('midiConnectionStatus');
+            connectionStatus.textContent = `Connected to: ${selectedOutput.name || 'MIDI Device'}`;
+            connectionStatus.className = 'status success';
+            connectionStatus.style.display = 'block';
+
+            closeMIDIDialog();
+        }
+
+        function closeMIDIDialog() {
+            document.getElementById('midiDialog').style.display = 'none';
+        }
+
+        function downloadMIDIFile() {
+            if (currentPhonemes.length === 0) {
+                showStatus('No phonemes to download. Please enter some text first.', 'error');
+                return;
+            }
+
+            // Create a simple MIDI file
+            const midiData = createMIDIFile(currentPhonemes);
+            const blob = new Blob([midiData], { type: 'audio/midi' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'robovox_phonemes.mid';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus(`Downloaded MIDI file with ${currentPhonemes.length} phonemes!`, 'success');
+        }
+
+        function createMIDIFile(phonemes) {
+            // Simple MIDI file creation (simplified version)
+            const header = new Uint8Array([
+                0x4D, 0x54, 0x68, 0x64, // "MThd"
+                0x00, 0x00, 0x00, 0x06, // Header length
+                0x00, 0x01,             // Format 1
+                0x00, 0x01,             // 1 track
+                0x00, 0x60              // 96 ticks per quarter note
+            ]);
+
+            // Track header
+            const trackHeader = new Uint8Array([
+                0x4D, 0x54, 0x72, 0x6B  // "MTrk"
+            ]);
+
+            // Create track data
+            let trackData = [];
+            let time = 0;
+
+            for (let i = 0; i < phonemes.length; i++) {
+                const phoneme = phonemes[i];
+                const midiNote = phonemeToMIDI[phoneme];
+
+                if (midiNote) {
+                    // Note On
+                    trackData.push(0x00); // Delta time
+                    trackData.push(0x90); // Note On
+                    trackData.push(midiNote); // Note
+                    trackData.push(0x64); // Velocity
+
+                    // Note Off after 1 quarter note
+                    trackData.push(0x60); // Delta time
+                    trackData.push(0x80); // Note Off
+                    trackData.push(midiNote); // Note
+                    trackData.push(0x00); // Velocity
+                }
+            }
+
+            // End of track
+            trackData.push(0x00, 0xFF, 0x2F, 0x00);
+
+            // Calculate track length
+            const trackLength = trackData.length;
+            const trackLengthBytes = [
+                (trackLength >> 24) & 0xFF,
+                (trackLength >> 16) & 0xFF,
+                (trackLength >> 8) & 0xFF,
+                trackLength & 0xFF
+            ];
+
+            // Combine all parts
+            const midiFile = new Uint8Array(header.length + trackHeader.length + 4 + trackData.length);
+            let offset = 0;
+
+            midiFile.set(header, offset);
+            offset += header.length;
+
+            midiFile.set(trackHeader, offset);
+            offset += trackHeader.length;
+
+            midiFile.set(trackLengthBytes, offset);
+            offset += 4;
+
+            midiFile.set(trackData, offset);
+
+            return midiFile;
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('midiStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Update the convertToPhonemes function to store current phonemes
+        function convertToPhonemes() {
+            const textInput = document.getElementById('textInput');
+            const ipaOutput = document.getElementById('ipaOutput');
+            const robovoxOutput = document.getElementById('robovoxOutput');
+
+            const text = textInput.value.trim();
+            if (!text) {
+                ipaOutput.textContent = '';
+                robovoxOutput.innerHTML = '';
+                currentPhonemes = [];
+                return;
+            }
+
+            // Convert to IPA
+            const ipa = textToIPA(text);
+            ipaOutput.textContent = ipa;
+
+            // Convert IPA to Robovox phonemes
+            let robovoxPhonemes = [];
+            currentPhonemes = []; // Reset current phonemes
+
+            // Split by spaces to handle words separately
+            const words = text.toLowerCase().split(/\s+/);
+
+            words.forEach((word, wordIndex) => {
+                // Convert each word to IPA
+                const wordIPA = textToIPA(word);
+
+                // Process each character in the IPA
+                for (let i = 0; i < wordIPA.length; i++) {
+                    const char = wordIPA[i];
+
+                    // Skip stress marks and other diacritics
+                    if (char === 'ˈ' || char === 'ˌ' || char === 'ː') {
+                        continue;
+                    }
+
+                    // Check for multi-character IPA symbols
+                    let found = false;
+                    for (let length = 2; length >= 1; length--) {
+                        if (i + length <= wordIPA.length) {
+                            const substr = wordIPA.substring(i, i + length);
+                            if (ipaToSC02[substr]) {
+                                const sc02 = ipaToSC02[substr];
+                                if (sc02) { // Only add if not empty
+                                    robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                                    currentPhonemes.push(sc02); // Store for MIDI
+                                }
+                                i += length - 1; // Skip the processed characters
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Single character
+                    if (!found && ipaToSC02[char]) {
+                        const sc02 = ipaToSC02[char];
+                        if (sc02) { // Only add if not empty
+                            robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                            currentPhonemes.push(sc02); // Store for MIDI
+                        }
+                    }
+                }
+
+                // Add PA0 between words (except after the last word)
+                if (wordIndex < words.length - 1) {
+                    robovoxPhonemes.push(`<span class="phoneme">PA0</span>`);
+                    currentPhonemes.push('PA0'); // Store for MIDI
+                }
+            });
 
             robovoxOutput.innerHTML = robovoxPhonemes.join(' ');
         }
