@@ -114,6 +114,31 @@
             font-size: 20px;
         }
 
+        .phoneme-dropdown {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            min-width: 60px;
+        }
+
+        .phoneme-dropdown option {
+            background: white;
+            color: #333;
+            padding: 4px;
+        }
+
+        .phoneme-dropdown:focus {
+            outline: 2px solid #f39c12;
+            outline-offset: 2px;
+        }
+
         .info {
             background: #d1ecf1;
             border: 1px solid #bee5eb;
@@ -700,6 +725,62 @@
         let phonemeVelocities = {};
         let phonemePitches = {};
 
+        // Define vowel phonemes for dropdown replacement
+        const vowelPhonemes = ['A', 'E', 'I', 'O', 'U', 'AE', 'AH', 'AW', 'AY', 'E1', 'E2', 'EH', 'EH1', 'ER', 'IE', 'IU', 'IU1', 'OO', 'OU', 'U1', 'UH', 'UH1', 'UH2', 'UH3', 'Y', 'YI'];
+
+        // Vowel options for dropdowns
+        const vowelOptions = [
+            { value: 'A', label: 'A' },
+            { value: 'E', label: 'E' },
+            { value: 'I', label: 'I' },
+            { value: 'O', label: 'O' },
+            { value: 'U', label: 'U' },
+            { value: 'AE', label: 'AE' },
+            { value: 'AH', label: 'AH' },
+            { value: 'AW', label: 'AW' },
+            { value: 'AY', label: 'AY' },
+            { value: 'E1', label: 'E1' },
+            { value: 'E2', label: 'E2' },
+            { value: 'EH', label: 'EH' },
+            { value: 'EH1', label: 'EH1' },
+            { value: 'ER', label: 'ER' },
+            { value: 'IE', label: 'IE' },
+            { value: 'IU', label: 'IU' },
+            { value: 'IU1', label: 'IU1' },
+            { value: 'OO', label: 'OO' },
+            { value: 'OU', label: 'OU' },
+            { value: 'U1', label: 'U1' },
+            { value: 'UH', label: 'UH' },
+            { value: 'UH1', label: 'UH1' },
+            { value: 'UH2', label: 'UH2' },
+            { value: 'UH3', label: 'UH3' },
+            { value: 'Y', label: 'Y' },
+            { value: 'YI', label: 'YI' }
+        ];
+
+        function createVowelDropdown(selectedValue, dropdownId) {
+            let optionsHtml = '';
+            vowelOptions.forEach(option => {
+                const selected = option.value === selectedValue ? 'selected' : '';
+                optionsHtml += `<option value="${option.value}" ${selected}>${option.label}</option>`;
+            });
+
+            return `<select class="phoneme-dropdown" id="${dropdownId}" onchange="handleVowelChange(this, '${dropdownId}')">${optionsHtml}</select>`;
+        }
+
+        function handleVowelChange(dropdown, dropdownId) {
+            const newValue = dropdown.value;
+            const phonemeIndex = parseInt(dropdownId.split('-')[1]);
+
+            // Update the currentPhonemes array
+            currentPhonemes[phonemeIndex] = newValue;
+
+            // Update the phoneme controls on the right
+            createPhonemeControls(currentPhonemes);
+
+            console.log(`Vowel changed to: ${newValue} at index ${phonemeIndex}`);
+        }
+
         function createPhonemeControls(phonemes) {
             const controlsList = document.getElementById('phonemeControlsList');
             controlsList.innerHTML = '';
@@ -1112,7 +1193,13 @@
                             if (ipaToSC02[substr]) {
                                 const sc02 = ipaToSC02[substr];
                                 if (sc02) { // Only add if not empty
-                                    robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                                    // Check if it's a vowel and create dropdown
+                                    if (vowelPhonemes.includes(sc02)) {
+                                        const dropdownId = `vowel-${currentPhonemes.length}`;
+                                        robovoxPhonemes.push(createVowelDropdown(sc02, dropdownId));
+                                    } else {
+                                        robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                                    }
                                     currentPhonemes.push(sc02); // Store for MIDI
                                 }
                                 i += length - 1; // Skip the processed characters
@@ -1126,7 +1213,13 @@
                     if (!found && ipaToSC02[char]) {
                         const sc02 = ipaToSC02[char];
                         if (sc02) { // Only add if not empty
-                            robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                            // Check if it's a vowel and create dropdown
+                            if (vowelPhonemes.includes(sc02)) {
+                                const dropdownId = `vowel-${currentPhonemes.length}`;
+                                robovoxPhonemes.push(createVowelDropdown(sc02, dropdownId));
+                            } else {
+                                robovoxPhonemes.push(`<span class="phoneme">${sc02}</span>`);
+                            }
                             currentPhonemes.push(sc02); // Store for MIDI
                         }
                     }
