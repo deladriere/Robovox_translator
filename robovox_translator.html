@@ -358,6 +358,29 @@
             margin-bottom: 20px;
             font-size: 14px;
         }
+
+        .reset-button {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-left: 10px;
+        }
+
+        .reset-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .description-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 
@@ -415,7 +438,10 @@
 
         <div class="phoneme-controls">
             <h3>🎛️ Phoneme Controls</h3>
-            <p>Adjust the duration of each phoneme before sending MIDI</p>
+            <div class="description-row">
+                <p>Adjust the duration of each phoneme before sending MIDI</p>
+                <button class="reset-button" onclick="resetAllSliders()">🔄 Reset All</button>
+            </div>
             <div id="phonemeControlsList">
                 <!-- Phoneme controls will be generated here -->
             </div>
@@ -878,6 +904,20 @@
             });
 
             controlsList.appendChild(table);
+        }
+
+        function resetAllSliders() {
+            // Reset stored values to defaults
+            currentPhonemes.forEach(phoneme => {
+                phonemeDurations[phoneme] = 100;
+                phonemeVelocities[phoneme] = 100;
+                phonemePitches[phoneme] = 64;
+            });
+
+            // Recreate the phoneme controls with default values
+            createPhonemeControls(currentPhonemes);
+
+            console.log('All sliders reset to default values');
         }
 
         function sendMIDINotes() {
