@@ -1108,6 +1108,15 @@
         // Convert on input
         document.getElementById('textInput').addEventListener('input', convertToPhonemes);
 
+        // Add keyboard support for spacebar to send MIDI
+        document.addEventListener('keydown', function (event) {
+            // Check if spacebar is pressed and no input field is focused
+            if (event.code === 'Space' && document.activeElement !== document.getElementById('textInput')) {
+                event.preventDefault(); // Prevent page scroll
+                sendMIDINotes();
+            }
+        });
+
         // Convert on page load
         window.onload = function () {
             convertToPhonemes();
