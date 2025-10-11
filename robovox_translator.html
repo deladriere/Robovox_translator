@@ -5,14 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robovox IPA Translator</title>
+    <script src="https://cdn.jsdelivr.net/npm/nexusui@2.1.0/dist/NexusUI.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
         }
 
         .container {
@@ -20,6 +27,17 @@
             border-radius: 15px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            flex: 1;
+        }
+
+        .phoneme-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         h1 {
@@ -255,56 +273,117 @@
             background: #f5f5f5;
             color: #333;
         }
+
+        .phoneme-control-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .phoneme-label {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-right: 15px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .phoneme-slider-container {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .phoneme-duration {
+            font-size: 14px;
+            color: #666;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .phoneme-controls h3 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .phoneme-controls p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🤖 Robovox IPA Translator</h1>
+    <div class="main-container">
+        <div class="container">
+            <h1>🤖 Robovox IPA Translator</h1>
 
-        <div class="info">
-            <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes, then map to Robovox
-            SC-02 phonemes using the official mapping table.
-        </div>
-
-        <div class="input-group">
-            <label for="textInput">Enter text to convert:</label>
-            <input type="text" id="textInput" placeholder="Type your text here..." value="hello">
-        </div>
-
-        <div class="output-section">
-            <div class="output-box">
-                <div><strong>IPA Phonemes:</strong></div>
-                <div id="ipaOutput" class="ipa-text">həˈloʊ</div>
+            <div class="info">
+                <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes, then map to
+                Robovox
+                SC-02 phonemes using the official mapping table.
             </div>
 
-            <div class="output-box">
-                <div><strong>Robovox SC-02 Phonemes:</strong></div>
-                <div id="robovoxOutput" class="robovox-text">
-                    <span class="phoneme">HF</span>
-                    <span class="phoneme">E2</span>
-                    <span class="phoneme">L</span>
-                    <span class="phoneme">O</span>
+            <div class="input-group">
+                <label for="textInput">Enter text to convert:</label>
+                <input type="text" id="textInput" placeholder="Type your text here..." value="hello">
+            </div>
+
+            <div class="output-section">
+                <div class="output-box">
+                    <div><strong>IPA Phonemes:</strong></div>
+                    <div id="ipaOutput" class="ipa-text">həˈloʊ</div>
+                </div>
+
+                <div class="output-box">
+                    <div><strong>Robovox SC-02 Phonemes:</strong></div>
+                    <div id="robovoxOutput" class="robovox-text">
+                        <span class="phoneme">HF</span>
+                        <span class="phoneme">E2</span>
+                        <span class="phoneme">L</span>
+                        <span class="phoneme">O</span>
+                    </div>
                 </div>
             </div>
+
+            <div class="midi-section">
+                <h3>🎵 MIDI Controls</h3>
+                <p>Send MIDI notes to your Robovox synthesizer.</p>
+
+                <div id="midiConnectionStatus" class="status" style="display: none; margin-bottom: 15px;"></div>
+
+                <div class="button-group">
+                    <button id="connectMidiBtn" class="midi-btn" onclick="showMIDIDialog()">
+                        🔌 Connect MIDI Device
+                    </button>
+                    <button id="sendMidiBtn" class="midi-btn" onclick="sendMIDINotes()" disabled>
+                        🎹 Send MIDI Notes
+                    </button>
+                </div>
+
+                <div id="midiStatus" class="status" style="display: none;"></div>
+            </div>
         </div>
 
-        <div class="midi-section">
-            <h3>🎵 MIDI Controls</h3>
-            <p>Send MIDI notes to your Robovox synthesizer.</p>
-
-            <div id="midiConnectionStatus" class="status" style="display: none; margin-bottom: 15px;"></div>
-
-            <div class="button-group">
-                <button id="connectMidiBtn" class="midi-btn" onclick="showMIDIDialog()">
-                    🔌 Connect MIDI Device
-                </button>
-                <button id="sendMidiBtn" class="midi-btn" onclick="sendMIDINotes()" disabled>
-                    🎹 Send MIDI Notes
-                </button>
+        <div class="phoneme-controls">
+            <h3>🎛️ Phoneme Controls</h3>
+            <p>Adjust the duration of each phoneme before sending MIDI</p>
+            <div id="phonemeControlsList">
+                <!-- Phoneme controls will be generated here -->
             </div>
-
-            <div id="midiStatus" class="status" style="display: none;"></div>
         </div>
     </div>
 
@@ -412,7 +491,7 @@
             'ʊ': 'U1', 'e': 'E', 'ø': 'E2', 'ɘ': 'E2', 'ɵ': 'OU', 'ɤ': 'UH',
             'o': 'O', 'ə': 'E2', 'ɛ': 'EH', 'œ': 'EH1', 'ɜ': 'ER', 'ɞ': 'UH2',
             'ʌ': 'UH', 'ɔ': ':OH', 'æ': 'AE', 'ɐ': 'AH1', 'a': 'A', 'ɶ': ':A',
-            'ɑ': 'AH', 'ɒ': 'AW'
+            'ɑ': 'AH', 'ɒ': 'AW', 'w': 'W', 'oʊ': 'O'  // Added missing 'w' mapping and 'oʊ' diphthong
         };
 
         // Simple text to IPA approximation (for demonstration)
@@ -442,7 +521,12 @@
                 'car': 'kɑr',
                 'book': 'bʊk',
                 'cat': 'kæt',
-                'dog': 'dɔɡ'
+                'dog': 'dɔɡ',
+                'welcome': 'ˈwɛlkom',
+                'to': 'tɯ',
+                'the': 'ðə',
+                'machine': 'məˈʃin',
+                'robot': 'ˈroʊbət'
             };
 
             const lowerText = text.toLowerCase();
@@ -452,8 +536,18 @@
                 return textToIPAMap[lowerText];
             }
 
-            // Simple letter-to-IPA approximation
-            let ipa = lowerText;
+            // For multi-word phrases, split and process each word
+            const words = lowerText.split(/\s+/);
+            if (words.length > 1) {
+                return words.map(word => textToIPAMap[word] || textToIPASimple(word)).join(' ');
+            }
+
+            // Simple letter-to-IPA approximation for single words
+            return textToIPASimple(lowerText);
+        }
+
+        function textToIPASimple(text) {
+            let ipa = text;
 
             // Common letter combinations
             ipa = ipa.replace(/th/g, 'θ');
@@ -466,11 +560,14 @@
             ipa = ipa.replace(/oy/g, 'ɔɪ');
             ipa = ipa.replace(/ow/g, 'aʊ');
 
-            // Single letter mappings
+            // More accurate single letter mappings
+            // For unstressed syllables, use schwa (ə) instead of specific vowels
+            ipa = ipa.replace(/c/g, 'k');  // Add 'c' to 'k' mapping
             ipa = ipa.replace(/a/g, 'æ');
             ipa = ipa.replace(/e/g, 'ɛ');
             ipa = ipa.replace(/i/g, 'ɪ');
-            ipa = ipa.replace(/o/g, 'ɔ');
+            // Only use ɔ for stressed 'o' sounds, use ə for unstressed
+            ipa = ipa.replace(/o/g, 'ə');  // Changed from 'ɔ' to 'ə' for better accuracy
             ipa = ipa.replace(/u/g, 'ʊ');
 
             return ipa;
@@ -537,6 +634,94 @@
         let midiAccess = null;
         let selectedOutput = null;
         let availableOutputs = [];
+        let phonemeSliders = [];
+        let phonemeDurations = {};
+
+        function createPhonemeControls(phonemes) {
+            const controlsList = document.getElementById('phonemeControlsList');
+            controlsList.innerHTML = '';
+            phonemeSliders = [];
+            phonemeDurations = {};
+
+            console.log('Creating phoneme controls for:', phonemes);
+
+            if (phonemes.length === 0) {
+                controlsList.innerHTML = '<p style="text-align: center; color: #666;">No phonemes to control. Enter some text first.</p>';
+                return;
+            }
+
+            phonemes.forEach((phoneme, index) => {
+                // Create control item
+                const controlItem = document.createElement('div');
+                controlItem.className = 'phoneme-control-item';
+
+                // Phoneme label
+                const phonemeLabel = document.createElement('div');
+                phonemeLabel.className = 'phoneme-label';
+                phonemeLabel.textContent = phoneme;
+
+                // Slider container
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'phoneme-slider-container';
+                sliderContainer.id = `slider-${index}`;
+
+                // Duration display
+                const durationDisplay = document.createElement('div');
+                durationDisplay.className = 'phoneme-duration';
+                durationDisplay.id = `duration-${index}`;
+                durationDisplay.textContent = '100ms';
+
+                // Assemble the control
+                controlItem.appendChild(phonemeLabel);
+                controlItem.appendChild(sliderContainer);
+                controlItem.appendChild(durationDisplay);
+                controlsList.appendChild(controlItem);
+
+                // Create NexusUI slider
+                try {
+                    if (typeof Nexus !== 'undefined' && Nexus.Slider) {
+                        const slider = new Nexus.Slider(`#slider-${index}`, {
+                            'size': [200, 20],
+                            'mode': 'relative',
+                            'min': 50,
+                            'max': 1000,
+                            'step': 10,
+                            'value': 100
+                        });
+
+                        // Update duration display and store value
+                        slider.on('change', function (v) {
+                            durationDisplay.textContent = Math.round(v) + 'ms';
+                            phonemeDurations[phoneme] = Math.round(v);
+                        });
+
+                        phonemeSliders.push(slider);
+                    } else {
+                        throw new Error('NexusUI not loaded');
+                    }
+                } catch (error) {
+                    console.error('Error creating slider:', error);
+                    // Fallback: create a simple HTML range input
+                    const fallbackSlider = document.createElement('input');
+                    fallbackSlider.type = 'range';
+                    fallbackSlider.min = '50';
+                    fallbackSlider.max = '1000';
+                    fallbackSlider.step = '10';
+                    fallbackSlider.value = '100';
+                    fallbackSlider.style.width = '200px';
+                    sliderContainer.appendChild(fallbackSlider);
+
+                    fallbackSlider.addEventListener('input', function (e) {
+                        const value = parseInt(e.target.value);
+                        durationDisplay.textContent = value + 'ms';
+                        phonemeDurations[phoneme] = value;
+                    });
+                }
+
+                // Store duration
+                phonemeDurations[phoneme] = 100;
+            });
+        }
 
         function sendMIDINotes() {
             const statusDiv = document.getElementById('midiStatus');
@@ -568,15 +753,18 @@
                 const midiNote = phonemeToMIDI[phoneme];
 
                 if (midiNote) {
+                    // Get custom duration for this phoneme, default to 100ms
+                    const duration = phonemeDurations[phoneme] || 100;
+
                     // Send Note On
                     selectedOutput.send([0x90, midiNote, 100]); // Channel 1, note, velocity 100
 
-                    // Send Note Off after 100ms
+                    // Send Note Off after custom duration
                     setTimeout(() => {
                         selectedOutput.send([0x80, midiNote, 0]); // Channel 1, note, velocity 0
                         noteIndex++;
                         setTimeout(sendNextNote, 0); // No gap - immediate next note
-                    }, 100);
+                    }, duration);
                 } else {
                     noteIndex++;
                     setTimeout(sendNextNote, 50);
@@ -750,6 +938,9 @@
             });
 
             robovoxOutput.innerHTML = robovoxPhonemes.join(' ');
+
+            // Create phoneme controls
+            createPhonemeControls(currentPhonemes);
         }
 
         // Convert on input
