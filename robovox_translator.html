@@ -721,9 +721,9 @@
         let selectedOutput = null;
         let availableOutputs = [];
         let phonemeSliders = [];
-        let phonemeDurations = {};
-        let phonemeVelocities = {};
-        let phonemePitches = {};
+        let phonemeDurations = []; // Array by position instead of object by phoneme
+        let phonemeVelocities = []; // Array by position instead of object by phoneme
+        let phonemePitches = []; // Array by position instead of object by phoneme
 
         // Define vowel phonemes for dropdown replacement
         const vowelPhonemes = ['A', 'E', 'I', 'O', 'U', 'AE', 'AH', 'AW', 'AY', 'E1', 'E2', 'EH', 'EH1', 'ER', 'IE', 'IU', 'IU1', 'OO', 'OU', 'U1', 'UH', 'UH1', 'UH2', 'UH3', 'Y', 'YI'];
@@ -785,8 +785,9 @@
             const controlsList = document.getElementById('phonemeControlsList');
             controlsList.innerHTML = '';
             phonemeSliders = [];
-            phonemeDurations = {};
-            phonemeVelocities = {};
+            phonemeDurations = [];
+            phonemeVelocities = [];
+            phonemePitches = [];
 
             console.log('Creating phoneme controls for:', phonemes);
 
@@ -903,19 +904,19 @@
                         // Duration slider event
                         durationSlider.on('change', function (v) {
                             durationDisplay.textContent = Math.round(v) + 'ms';
-                            phonemeDurations[phoneme] = Math.round(v);
+                            phonemeDurations[index] = Math.round(v);
                         });
 
                         // Velocity slider event
                         velocitySlider.on('change', function (v) {
                             velocityDisplay.textContent = Math.round(v);
-                            phonemeVelocities[phoneme] = Math.round(v);
+                            phonemeVelocities[index] = Math.round(v);
                         });
 
                         // Pitch slider event
                         pitchSlider.on('change', function (v) {
                             pitchDisplay.textContent = Math.round(v);
-                            phonemePitches[phoneme] = Math.round(v);
+                            phonemePitches[index] = Math.round(v);
                         });
 
                         phonemeSliders.push(durationSlider, velocitySlider, pitchSlider);
@@ -960,39 +961,39 @@
                     durationFallbackSlider.addEventListener('input', function (e) {
                         const value = parseInt(e.target.value);
                         durationDisplay.textContent = value + 'ms';
-                        phonemeDurations[phoneme] = value;
+                        phonemeDurations[index] = value;
                     });
 
                     // Velocity slider event
                     velocityFallbackSlider.addEventListener('input', function (e) {
                         const value = parseInt(e.target.value);
                         velocityDisplay.textContent = value;
-                        phonemeVelocities[phoneme] = value;
+                        phonemeVelocities[index] = value;
                     });
 
                     // Pitch slider event
                     pitchFallbackSlider.addEventListener('input', function (e) {
                         const value = parseInt(e.target.value);
                         pitchDisplay.textContent = value;
-                        phonemePitches[phoneme] = value;
+                        phonemePitches[index] = value;
                     });
                 }
 
-                // Store duration, velocity, and pitch
-                phonemeDurations[phoneme] = 100;
-                phonemeVelocities[phoneme] = 100;
-                phonemePitches[phoneme] = 64;
+                // Store duration, velocity, and pitch by position
+                phonemeDurations[index] = 100;
+                phonemeVelocities[index] = 100;
+                phonemePitches[index] = 64;
             });
 
             controlsList.appendChild(table);
         }
 
         function resetAllSliders() {
-            // Reset stored values to defaults
-            currentPhonemes.forEach(phoneme => {
-                phonemeDurations[phoneme] = 100;
-                phonemeVelocities[phoneme] = 100;
-                phonemePitches[phoneme] = 64;
+            // Reset stored values to defaults by position
+            currentPhonemes.forEach((phoneme, index) => {
+                phonemeDurations[index] = 100;
+                phonemeVelocities[index] = 100;
+                phonemePitches[index] = 64;
             });
 
             // Recreate the phoneme controls with default values
@@ -1031,10 +1032,10 @@
                 const midiNote = phonemeToMIDI[phoneme];
 
                 if (midiNote) {
-                    // Get custom duration, velocity, and pitch for this phoneme
-                    const duration = phonemeDurations[phoneme] || 100;
-                    const velocity = phonemeVelocities[phoneme] || 100;
-                    const pitch = phonemePitches[phoneme] || 64;
+                    // Get custom duration, velocity, and pitch for this phoneme position
+                    const duration = phonemeDurations[noteIndex] || 100;
+                    const velocity = phonemeVelocities[noteIndex] || 100;
+                    const pitch = phonemePitches[noteIndex] || 64;
 
                     // Send CC2 (Pitch) before the note
                     selectedOutput.send([0xB0, 2, pitch]); // Channel 1, CC2, pitch value
