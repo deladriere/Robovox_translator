@@ -35,7 +35,7 @@
             border-radius: 15px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 400px;
+            width: 600px;
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -274,40 +274,71 @@
             color: #333;
         }
 
-        .phoneme-control-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
+        .phoneme-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        .phoneme-table th {
             background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+
+        .phoneme-table th:nth-child(1) {
+            width: 20%;
+        }
+
+        .phoneme-table th:nth-child(2) {
+            width: 40%;
+        }
+
+        .phoneme-table th:nth-child(3) {
+            width: 40%;
+        }
+
+        .phoneme-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .phoneme-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .phoneme-table tr:nth-child(odd) {
+            background: white;
         }
 
         .phoneme-label {
             font-family: 'Courier New', monospace;
             font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
-            background: #3498db;
             color: white;
+            background: #3498db;
             padding: 8px 12px;
             border-radius: 6px;
-            margin-right: 15px;
+            display: inline-block;
             min-width: 50px;
-            text-align: center;
         }
 
         .phoneme-slider-container {
-            flex: 1;
-            margin-right: 10px;
+            width: 100%;
+            margin: 5px 0;
         }
 
-        .phoneme-duration {
+        .phoneme-display {
             font-size: 14px;
             color: #666;
-            min-width: 60px;
-            text-align: right;
+            font-weight: bold;
+            margin-top: 5px;
         }
 
         .phoneme-controls h3 {
@@ -636,12 +667,14 @@
         let availableOutputs = [];
         let phonemeSliders = [];
         let phonemeDurations = {};
+        let phonemeVelocities = {};
 
         function createPhonemeControls(phonemes) {
             const controlsList = document.getElementById('phonemeControlsList');
             controlsList.innerHTML = '';
             phonemeSliders = [];
             phonemeDurations = {};
+            phonemeVelocities = {};
 
             console.log('Creating phoneme controls for:', phonemes);
 
@@ -650,37 +683,67 @@
                 return;
             }
 
-            phonemes.forEach((phoneme, index) => {
-                // Create control item
-                const controlItem = document.createElement('div');
-                controlItem.className = 'phoneme-control-item';
+            // Create table
+            const table = document.createElement('table');
+            table.className = 'phoneme-table';
 
-                // Phoneme label
+            // Create header
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `
+                <th>Phoneme</th>
+                <th>Duration (ms)</th>
+                <th>Velocity</th>
+            `;
+            table.appendChild(headerRow);
+
+            // Create rows for each phoneme
+            phonemes.forEach((phoneme, index) => {
+                const row = document.createElement('tr');
+
+                // Column 1: Phoneme
+                const phonemeCell = document.createElement('td');
                 const phonemeLabel = document.createElement('div');
                 phonemeLabel.className = 'phoneme-label';
                 phonemeLabel.textContent = phoneme;
+                phonemeCell.appendChild(phonemeLabel);
+                row.appendChild(phonemeCell);
 
-                // Slider container
-                const sliderContainer = document.createElement('div');
-                sliderContainer.className = 'phoneme-slider-container';
-                sliderContainer.id = `slider-${index}`;
+                // Column 2: Duration
+                const durationCell = document.createElement('td');
+                const durationContainer = document.createElement('div');
+                durationContainer.className = 'phoneme-slider-container';
+                durationContainer.id = `duration-slider-${index}`;
 
-                // Duration display
                 const durationDisplay = document.createElement('div');
-                durationDisplay.className = 'phoneme-duration';
+                durationDisplay.className = 'phoneme-display';
                 durationDisplay.id = `duration-${index}`;
                 durationDisplay.textContent = '100ms';
 
-                // Assemble the control
-                controlItem.appendChild(phonemeLabel);
-                controlItem.appendChild(sliderContainer);
-                controlItem.appendChild(durationDisplay);
-                controlsList.appendChild(controlItem);
+                durationCell.appendChild(durationContainer);
+                durationCell.appendChild(durationDisplay);
+                row.appendChild(durationCell);
+
+                // Column 3: Velocity
+                const velocityCell = document.createElement('td');
+                const velocityContainer = document.createElement('div');
+                velocityContainer.className = 'phoneme-slider-container';
+                velocityContainer.id = `velocity-slider-${index}`;
+
+                const velocityDisplay = document.createElement('div');
+                velocityDisplay.className = 'phoneme-display';
+                velocityDisplay.id = `velocity-${index}`;
+                velocityDisplay.textContent = '100';
+
+                velocityCell.appendChild(velocityContainer);
+                velocityCell.appendChild(velocityDisplay);
+                row.appendChild(velocityCell);
+
+                table.appendChild(row);
 
                 // Create NexusUI slider
                 try {
                     if (typeof Nexus !== 'undefined' && Nexus.Slider) {
-                        const slider = new Nexus.Slider(`#slider-${index}`, {
+                        const durationSlider = new Nexus.Slider(`#duration-slider-${index}`, {
                             'size': [200, 20],
                             'mode': 'relative',
                             'min': 50,
@@ -689,38 +752,77 @@
                             'value': 100
                         });
 
-                        // Update duration display and store value
-                        slider.on('change', function (v) {
+                        // Velocity slider
+                        const velocitySlider = new Nexus.Slider(`#velocity-slider-${index}`, {
+                            'size': [200, 20],
+                            'mode': 'relative',
+                            'min': 1,
+                            'max': 127,
+                            'step': 1,
+                            'value': 100
+                        });
+
+                        // Duration slider event
+                        durationSlider.on('change', function (v) {
                             durationDisplay.textContent = Math.round(v) + 'ms';
                             phonemeDurations[phoneme] = Math.round(v);
                         });
 
-                        phonemeSliders.push(slider);
+                        // Velocity slider event
+                        velocitySlider.on('change', function (v) {
+                            velocityDisplay.textContent = Math.round(v);
+                            phonemeVelocities[phoneme] = Math.round(v);
+                        });
+
+                        phonemeSliders.push(durationSlider, velocitySlider);
                     } else {
                         throw new Error('NexusUI not loaded');
                     }
                 } catch (error) {
-                    console.error('Error creating slider:', error);
-                    // Fallback: create a simple HTML range input
-                    const fallbackSlider = document.createElement('input');
-                    fallbackSlider.type = 'range';
-                    fallbackSlider.min = '50';
-                    fallbackSlider.max = '1000';
-                    fallbackSlider.step = '10';
-                    fallbackSlider.value = '100';
-                    fallbackSlider.style.width = '200px';
-                    sliderContainer.appendChild(fallbackSlider);
+                    console.error('Error creating sliders:', error);
+                    // Fallback: create simple HTML range inputs
 
-                    fallbackSlider.addEventListener('input', function (e) {
+                    // Duration slider
+                    const durationFallbackSlider = document.createElement('input');
+                    durationFallbackSlider.type = 'range';
+                    durationFallbackSlider.min = '50';
+                    durationFallbackSlider.max = '1000';
+                    durationFallbackSlider.step = '10';
+                    durationFallbackSlider.value = '100';
+                    durationFallbackSlider.style.width = '200px';
+                    durationContainer.appendChild(durationFallbackSlider);
+
+                    // Velocity slider
+                    const velocityFallbackSlider = document.createElement('input');
+                    velocityFallbackSlider.type = 'range';
+                    velocityFallbackSlider.min = '1';
+                    velocityFallbackSlider.max = '127';
+                    velocityFallbackSlider.step = '1';
+                    velocityFallbackSlider.value = '100';
+                    velocityFallbackSlider.style.width = '200px';
+                    velocityContainer.appendChild(velocityFallbackSlider);
+
+                    // Duration slider event
+                    durationFallbackSlider.addEventListener('input', function (e) {
                         const value = parseInt(e.target.value);
                         durationDisplay.textContent = value + 'ms';
                         phonemeDurations[phoneme] = value;
                     });
+
+                    // Velocity slider event
+                    velocityFallbackSlider.addEventListener('input', function (e) {
+                        const value = parseInt(e.target.value);
+                        velocityDisplay.textContent = value;
+                        phonemeVelocities[phoneme] = value;
+                    });
                 }
 
-                // Store duration
+                // Store duration and velocity
                 phonemeDurations[phoneme] = 100;
+                phonemeVelocities[phoneme] = 100;
             });
+
+            controlsList.appendChild(table);
         }
 
         function sendMIDINotes() {
@@ -753,11 +855,12 @@
                 const midiNote = phonemeToMIDI[phoneme];
 
                 if (midiNote) {
-                    // Get custom duration for this phoneme, default to 100ms
+                    // Get custom duration and velocity for this phoneme
                     const duration = phonemeDurations[phoneme] || 100;
+                    const velocity = phonemeVelocities[phoneme] || 100;
 
                     // Send Note On
-                    selectedOutput.send([0x90, midiNote, 100]); // Channel 1, note, velocity 100
+                    selectedOutput.send([0x90, midiNote, velocity]); // Channel 1, note, custom velocity
 
                     // Send Note Off after custom duration
                     setTimeout(() => {
