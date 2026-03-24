@@ -112,6 +112,10 @@
             border-radius: 6px;
             font-weight: bold;
             font-size: 20px;
+            height: 36px;
+            line-height: 20px;
+            box-sizing: border-box;
+            vertical-align: top;
         }
 
         .phoneme-dropdown {
@@ -122,10 +126,14 @@
             margin: 4px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 20px;
             border: none;
             cursor: pointer;
             min-width: 60px;
+            height: 36px;
+            line-height: 20px;
+            box-sizing: border-box;
+            vertical-align: top;
         }
 
         .phoneme-dropdown option {
@@ -358,6 +366,10 @@
             min-width: 50px;
         }
 
+        .phoneme-label.vowel {
+            background: #e74c3c;
+        }
+
         .phoneme-slider-container {
             width: 100%;
             margin: 5px 0;
@@ -415,9 +427,11 @@
             <h1>🤖 Robovox IPA Translator</h1>
 
             <div class="info">
-                <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes, then map to
-                Robovox
-                SC-02 phonemes using the official mapping table.
+                <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes using web-based
+                phonetic analysis, then map to Robovox SC-02 phonemes using the official mapping table. Vowels appear as
+                red dropdowns for easy experimentation, while consonants show as blue badges. Each phoneme can be
+                individually controlled with custom duration, velocity, and pitch settings before sending MIDI to your
+                synthesizer.
             </div>
 
             <div class="input-group">
@@ -818,6 +832,12 @@
                 const phonemeCell = document.createElement('td');
                 const phonemeLabel = document.createElement('div');
                 phonemeLabel.className = 'phoneme-label';
+
+                // Add vowel class if it's a vowel
+                if (vowelPhonemes.includes(phoneme)) {
+                    phonemeLabel.classList.add('vowel');
+                }
+
                 phonemeLabel.textContent = phoneme;
                 phonemeCell.appendChild(phonemeLabel);
                 row.appendChild(phonemeCell);
@@ -1040,15 +1060,18 @@
                     // Send CC2 (Pitch) before the note
                     selectedOutput.send([0xB0, 2, pitch]); // Channel 1, CC2, pitch value
 
-                    // Send Note On
-                    selectedOutput.send([0x90, midiNote, velocity]); // Channel 1, note, custom velocity
+                    // Small delay to ensure CC2 is processed before the note
+                    setTimeout(() => {
+                        // Send Note On
+                        selectedOutput.send([0x90, midiNote, velocity]); // Channel 1, note, custom velocity
+                    }, 10); // 10ms delay
 
-                    // Send Note Off after custom duration
+                    // Send Note Off after custom duration (accounting for the 10ms delay)
                     setTimeout(() => {
                         selectedOutput.send([0x80, midiNote, 0]); // Channel 1, note, velocity 0
                         noteIndex++;
                         setTimeout(sendNextNote, 0); // No gap - immediate next note
-                    }, duration);
+                    }, duration + 10); // Add 10ms to account for the CC2 delay
                 } else {
                     noteIndex++;
                     setTimeout(sendNextNote, 50);
