@@ -1,6 +1,6 @@
 # Robovox IPA Translator
 
-A browser-based tool that converts English text into IPA, maps IPA to Robovox SC-02 phonemes, and sends the sequence as MIDI notes to a connected synth.
+**Version 1.1** — A browser-based tool that converts English text into IPA, maps IPA to Robovox SC-02 phonemes, and sends the sequence as MIDI notes to a connected synth or exports it as a `.mid` file.
 
 ![Robovox IPA Translator interface](interface.png)
 
@@ -14,23 +14,25 @@ A browser-based tool that converts English text into IPA, maps IPA to Robovox SC
   - velocity
   - pitch (MIDI CC2)
 - Sends the phoneme sequence over Web MIDI, one note per phoneme.
+- **Download MIDI** saves a Standard MIDI File (`Robovox.mid`) for use in a DAW; no MIDI device is required. Export uses the same per-phoneme duration, velocity, and CC2 pitch as the on-screen controls (timing is based on 120 BPM in the file).
 
 ## Project Structure
 
-- `robovox_translator.html`: single-file app (UI, mapping tables, MIDI logic, controls).
+- `index.html`: single-file app (UI, mapping tables, MIDI logic, controls).
 
 ## How To Run
 
-1. Open `robovox_translator.html` in a modern browser with Web MIDI support (Chrome/Edge recommended).
+1. Open `index.html` in a modern browser with Web MIDI support (Chrome/Edge recommended), or visit the GitHub Pages site URL if the repo has Pages enabled.
 2. Connect your MIDI output:
    - Click **Connect MIDI Device**
    - Select your output device in the dialog
    - Click **Connect**
 3. Type text in the input field.
 4. Optionally adjust phoneme duration/velocity/pitch controls.
-5. Trigger playback:
-   - Click **Send MIDI Notes**
-   - Or use the keyboard shortcut documented below.
+5. Output the sequence:
+   - Click **Send MIDI Notes** (requires a connected MIDI device).
+   - Or click **Download MIDI** to save `Robovox.mid` (works without a device).
+   - Or use the keyboard shortcut below for live send.
 
 ## Keyboard Controls
 
@@ -52,4 +54,5 @@ A browser-based tool that converts English text into IPA, maps IPA to Robovox SC
   - CC2 pitch is sent first.
   - Then Note On.
   - Then Note Off after the phoneme duration.
+- MIDI file export mirrors that order (CC2, Note On, Note Off) in a single-track SMF; tempo meta event is 120 BPM.
 - A `PA0` phoneme is inserted between words for separation.

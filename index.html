@@ -40,10 +40,22 @@
             overflow-y: auto;
         }
 
-        h1 {
+        .title-block {
+            margin-bottom: 30px;
+        }
+
+        .title-block h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 30px;
+            margin: 0 0 6px;
+        }
+
+        .app-version {
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            margin: 0;
+            letter-spacing: 0.02em;
         }
 
         .input-group {
@@ -154,6 +166,50 @@
             padding: 15px;
             margin-bottom: 20px;
             color: #0c5460;
+        }
+
+        .info summary {
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+            list-style-position: outside;
+        }
+
+        .info summary::-webkit-details-marker {
+            color: #0c5460;
+        }
+
+        .info[open] summary {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(12, 84, 96, 0.15);
+        }
+
+        .info-body {
+            margin: 0;
+        }
+
+        .info-body ul {
+            margin: 0;
+            padding-left: 1.35em;
+            line-height: 1.5;
+        }
+
+        .info-body li {
+            margin-bottom: 0.4em;
+        }
+
+        .info-body li:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-body kbd {
+            font-family: inherit;
+            font-size: 0.95em;
+            padding: 0.1em 0.45em;
+            border-radius: 4px;
+            border: 1px solid rgba(12, 84, 96, 0.35);
+            background: rgba(255, 255, 255, 0.6);
         }
 
         .loading {
@@ -424,15 +480,29 @@
 <body>
     <div class="main-container">
         <div class="container">
-            <h1>🤖 Robovox IPA Translator</h1>
-
-            <div class="info">
-                <strong>How it works:</strong> Enter English text and it will convert to IPA phonemes using web-based
-                phonetic analysis, then map to Robovox SC-02 phonemes using the official mapping table. Vowels appear as
-                red dropdowns for easy experimentation, while consonants show as blue badges. Each phoneme can be
-                individually controlled with custom duration, velocity, and pitch settings before sending MIDI to your
-                synthesizer.
+            <div class="title-block">
+                <h1>🤖 Robovox IPA Translator</h1>
+                <p class="app-version">Version 1.1</p>
             </div>
+
+            <details class="info">
+                <summary>How it works</summary>
+                <div class="info-body">
+                    <ul>
+                        <li>Type English text; it is converted to approximate IPA, then mapped to <strong>Robovox SC-02</strong>
+                            phonemes (official table). Consonants are blue badges; vowels are red dropdowns so you can swap
+                            sounds quickly.</li>
+                        <li>The <strong>Phoneme Controls</strong> panel sets per-token <strong>duration</strong> (ms),
+                            <strong>velocity</strong>, and <strong>pitch</strong> (sent as MIDI CC2), used for both live
+                            output and export.</li>
+                        <li><strong>Connect MIDI Device</strong> then <strong>Send MIDI Notes</strong> plays the sequence
+                            over Web MIDI (Chrome/Edge). With the text field <em>not</em> focused, <kbd>Space</kbd> sends
+                            the sequence.</li>
+                        <li><strong>Download MIDI</strong> saves <code>Robovox.mid</code> for your DAW—no MIDI hardware
+                            required.</li>
+                    </ul>
+                </div>
+            </details>
 
             <div class="input-group">
                 <label for="textInput">Enter text to convert:</label>
@@ -458,7 +528,7 @@
 
             <div class="midi-section">
                 <h3>🎵 MIDI Controls</h3>
-                <p>Send MIDI notes to your Robovox synthesizer.</p>
+                <p>Send MIDI notes to your Robovox synthesizer, or download a <code>.mid</code> file for your DAW.</p>
 
                 <div id="midiConnectionStatus" class="status" style="display: none; margin-bottom: 15px;"></div>
 
@@ -468,6 +538,9 @@
                     </button>
                     <button id="sendMidiBtn" class="midi-btn" onclick="sendMIDINotes()" disabled>
                         🎹 Send MIDI Notes
+                    </button>
+                    <button type="button" id="downloadMidiBtn" class="midi-btn download-btn" onclick="downloadMIDI()">
+                        💾 Download MIDI
                     </button>
                 </div>
 
@@ -1079,6 +1152,104 @@
             }
 
             sendNextNote();
+        }
+
+        function downloadMIDI() {
+            if (currentPhonemes.length === 0) {
+                showStatus('No phonemes to export. Enter some text first.', 'error');
+                return;
+            }
+
+            showStatus('Generating MIDI file...', 'success');
+
+            const ticksPerQuarterNote = 480;
+            const bpm = 120;
+            const microsecondsPerQuarterNote = Math.round(60000000 / bpm);
+
+            const midiData = [];
+
+            midiData.push(0x4D, 0x54, 0x68, 0x64);
+            midiData.push(0x00, 0x00, 0x00, 0x06);
+            midiData.push(0x00, 0x00);
+            midiData.push(0x00, 0x01);
+            midiData.push(0x01, 0xE0);
+
+            midiData.push(0x4D, 0x54, 0x72, 0x6B);
+            const trackLengthPosition = midiData.length;
+            midiData.push(0x00, 0x00, 0x00, 0x00);
+
+            const trackEvents = [];
+
+            trackEvents.push(0x00);
+            trackEvents.push(0xFF, 0x51, 0x03);
+            trackEvents.push((microsecondsPerQuarterNote >> 16) & 0xFF);
+            trackEvents.push((microsecondsPerQuarterNote >> 8) & 0xFF);
+            trackEvents.push(microsecondsPerQuarterNote & 0xFF);
+
+            let lastTick = 0;
+
+            currentPhonemes.forEach((phoneme, index) => {
+                const midiNote = phonemeToMIDI[phoneme];
+                if (midiNote === undefined) {
+                    return;
+                }
+
+                const duration = phonemeDurations[index] || 100;
+                const velocity = phonemeVelocities[index] || 100;
+                const pitch = phonemePitches[index] || 64;
+
+                const durationTicks = Math.round(
+                    (duration * 60 * ticksPerQuarterNote) / (bpm * 1000)
+                );
+
+                trackEvents.push(...encodeVariableLength(lastTick));
+                trackEvents.push(0xB0, 0x02, pitch);
+                trackEvents.push(0x00);
+                trackEvents.push(0x90, midiNote, velocity);
+                trackEvents.push(...encodeVariableLength(durationTicks));
+                trackEvents.push(0x80, midiNote, 0x00);
+                lastTick = 0;
+            });
+
+            trackEvents.push(0x00);
+            trackEvents.push(0xFF, 0x2F, 0x00);
+
+            const trackLength = trackEvents.length;
+            midiData[trackLengthPosition] = (trackLength >> 24) & 0xFF;
+            midiData[trackLengthPosition + 1] = (trackLength >> 16) & 0xFF;
+            midiData[trackLengthPosition + 2] = (trackLength >> 8) & 0xFF;
+            midiData[trackLengthPosition + 3] = trackLength & 0xFF;
+
+            midiData.push(...trackEvents);
+
+            const midiArray = new Uint8Array(midiData);
+            const blob = new Blob([midiArray], { type: 'audio/midi' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Robovox.mid';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('MIDI file downloaded successfully!', 'success');
+        }
+
+        function encodeVariableLength(value) {
+            const result = [];
+            if (value === 0) {
+                result.push(0);
+            } else {
+                while (value > 0) {
+                    result.unshift(value & 0x7F);
+                    value >>= 7;
+                }
+                for (let i = 0; i < result.length - 1; i++) {
+                    result[i] |= 0x80;
+                }
+            }
+            return result;
         }
 
         function showMIDIDialog() {
