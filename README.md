@@ -2,6 +2,8 @@
 
 **Version 1.1** — A browser-based tool that converts English text into IPA, maps IPA to Robovox SC-02 phonemes, and sends the sequence as MIDI notes to a connected synth or exports it as a `.mid` file.
 
+Live page: https://deladriere.github.io/Robovox_translator/
+
 ![Robovox IPA Translator interface](interface.png)
 
 ## What It Does
